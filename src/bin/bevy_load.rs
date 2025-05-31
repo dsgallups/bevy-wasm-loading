@@ -10,37 +10,36 @@ fn main() {
 }
 
 #[derive(Resource)]
-pub struct GltfHandles {
-    handles: Vec<Handle<Gltf>>,
-    time_started: Instant,
-}
+struct TimeStart(Instant);
+
+#[derive(Component)]
+pub struct GltfHandle(Handle<Gltf>);
 
 fn load_assets(mut commands: Commands, asset_server: Res<AssetServer>) {
     let list = get_asset_list();
     info!("Total asset count: {}", list.len());
+
     let gltf_handles = list
         .into_iter()
-        .take(20)
-        .map(|asset| asset_server.load(asset))
-        .collect();
+        .map(|asset| GltfHandle(asset_server.load(asset)))
+        .collect::<Vec<_>>();
 
-    commands.insert_resource(GltfHandles {
-        handles: gltf_handles,
-        time_started: Instant::now(),
-    });
+    commands.spawn_batch(gltf_handles);
+    commands.insert_resource(TimeStart(Instant::now()));
 }
 
 fn check_assets_loaded(
     mut commands: Commands,
     gltfs: Res<Assets<Gltf>>,
-    handles: Res<GltfHandles>,
+    handles: Query<&GltfHandle>,
+    time_started: Res<TimeStart>,
 ) {
-    for handle in &handles.handles {
-        if !gltfs.contains(handle) {
+    for handle in &handles {
+        if !gltfs.contains(&handle.0) {
             return;
         }
     }
-    let elapsed = handles.time_started.elapsed();
+    let elapsed = time_started.0.elapsed();
     info!("All assets loaded! took {}ms.", elapsed.as_millis());
     commands.send_event(AppExit::Success);
 }
