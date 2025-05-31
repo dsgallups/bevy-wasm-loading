@@ -307,6 +307,7 @@ name = "bevy-wasm-loading"
 version = "0.1.0"
 dependencies = [
  "bevy",
+ "walkdir",
 ]
 
 [[package]]
